@@ -234,19 +234,19 @@ module core_top (
 
   // cart is unused, so set all level translators accordingly
   // directions are 0:IN, 1:OUT
-  assign cart_tran_bank3         = 8'hzz;
-  assign cart_tran_bank3_dir     = 1'b0;
-  assign cart_tran_bank2         = 8'hzz;
-  assign cart_tran_bank2_dir     = 1'b0;
-  assign cart_tran_bank1         = 8'hzz;
-  assign cart_tran_bank1_dir     = 1'b0;
-  assign cart_tran_bank0         = 4'hf;
-  assign cart_tran_bank0_dir     = 1'b1;
-  assign cart_tran_pin30         = 1'b0;  // reset or cs2, we let the hw control it by itself
-  assign cart_tran_pin30_dir     = 1'bz;
-  assign cart_pin30_pwroff_reset = 1'b0;  // hardware can control this
-  assign cart_tran_pin31         = 1'bz;  // input
-  assign cart_tran_pin31_dir     = 1'b0;  // input
+  // assign cart_tran_bank3         = 8'hzz;
+  // assign cart_tran_bank3_dir     = 1'b0;
+  // assign cart_tran_bank2         = 8'hzz;
+  // assign cart_tran_bank2_dir     = 1'b0;
+  // assign cart_tran_bank1         = 8'hzz;
+  // assign cart_tran_bank1_dir     = 1'b0;
+  // assign cart_tran_bank0         = 4'hf;
+  // assign cart_tran_bank0_dir     = 1'b1;
+  // assign cart_tran_pin30         = 1'b0;  // reset or cs2, we let the hw control it by itself
+  // assign cart_tran_pin30_dir     = 1'bz;
+  // assign cart_pin30_pwroff_reset = 1'b0;  // hardware can control this
+  // assign cart_tran_pin31         = 1'bz;  // input
+  // assign cart_tran_pin31_dir     = 1'b0;  // input
 
   // link port is input only
   assign port_tran_so            = 1'bz;
@@ -316,7 +316,12 @@ module core_top (
       end
       32'h10xxxxxx: begin
         // example
-        bridge_rd_data <= 0;
+        bridge_rd_data
+         <= 0;
+      end
+      32'hF7000000: begin 
+        //bridge_rd_data <= {15'h0,analogizer_settings};
+        bridge_rd_data <= analogizer_settings;
       end
       32'hF8xxxxxx: begin
         bridge_rd_data <= cmd_bridge_rd_data;
@@ -373,12 +378,15 @@ module core_top (
         32'h0000010C: begin
           joystick_deadzone <= bridge_wr_data[7:0];
         end
-        32'h200: begin
-          use_square_pixels <= bridge_wr_data[0];
-        end
-        32'h204: begin
-          blend_enabled <= bridge_wr_data[0];
-        end
+        // 32'h200: begin
+        //   use_square_pixels <= bridge_wr_data[0];
+        // end
+        // 32'h204: begin
+        //   blend_enabled <= bridge_wr_data[0];
+        // end
+        /*[ANALOGIZER_HOOK_BEGIN]*/
+				32'hF7000000: analogizer_settings  <=  bridge_wr_data[31:0];
+				/*[ANALOGIZER_HOOK_END]*/
       endcase
     end
   end
@@ -634,7 +642,7 @@ module core_top (
   wire [15:0] cont1_joy_y_calibrated = cont1_joy_total > joystick_deadzone ? cont1_joy_y : 8'd128;
 
   synch_3 #(
-      .WIDTH(32)
+      .WIDTH(16)
   ) cont1_s (
       cont1_key,
       cont1_key_s,
@@ -642,7 +650,7 @@ module core_top (
   );
 
   synch_3 #(
-      .WIDTH(32)
+      .WIDTH(16)
   ) cont2_s (
       cont2_key,
       cont2_key_s,
@@ -650,7 +658,7 @@ module core_top (
   );
 
   synch_3 #(
-      .WIDTH(32)
+      .WIDTH(16)
   ) cont3_s (
       cont3_key,
       cont3_key_s,
@@ -658,7 +666,7 @@ module core_top (
   );
 
   synch_3 #(
-      .WIDTH(32)
+      .WIDTH(16)
   ) cont4_s (
       cont4_key,
       cont4_key_s,
@@ -759,6 +767,118 @@ module core_top (
     rtc_time[15:8],  // Minute
     rtc_time[7:0]  // Second
   };
+/*[ANALOGIZER_HOOK_BEGIN]*/
+//Pocket Menu settings
+// reg [31:0] analogizer_settings = 0;
+// wire [31:0] analogizer_settings_s;
+reg [31:0] analogizer_settings = 0;
+wire [31:0] analogizer_settings_s;
+
+synch_3 #(.WIDTH(32)) sync_analogizer(analogizer_settings, analogizer_settings_s, clk_sys_21_48);
+
+always @(*) begin
+	game_cont_type                     = analogizer_settings_s[4:0];
+	p1_interface                       = analogizer_settings_s[7];
+	p2_interface                       = analogizer_settings_s[6];
+	game_cont_sample_rate              = analogizer_settings_s[10:8];
+	analog_video_type                  = analogizer_settings_s[15:12];
+	blank_pocket_screen                = analogizer_settings_s[16];
+  DBG_CSYNC                          = analogizer_settings_s[28:25];
+  DBG_DE                             = analogizer_settings_s[29];
+end
+
+wire clk_vid = video_rgb_clock; //video_rgb_clock; //Fixed one bit shift error on RGB channels.
+
+// reg SYNC;
+// reg DBG_ANALOGIZER_DE;
+// always @(posedge clk_sys_21_48) begin
+//   case(DBG_CSYNC)
+//     4'd0: SYNC <= ~^{video_hs_snes, video_vs_snes}; //XNOR
+//     4'd1: SYNC <= &{video_hs_snes, video_vs_snes};  //AND
+//     4'd2: SYNC <= ^{video_hs_snes, video_vs_snes};  //XOR
+//     4'd4: SYNC <= |{video_hs_snes, video_vs_snes};  //OR
+//     default: SYNC <= ^{video_hs_snes, video_vs_snes}; //DEFAULT: XOR
+//   endcase
+
+//   DBG_ANALOGIZER_DE <= (DBG_DE) ? ~ANALOGIZER_DE : ANALOGIZER_DE;
+// end
+wire SYNC = ~^{video_hs_snes, video_vs_snes};
+wire  ANALOGIZER_DE = ~(h_blank || v_blank);
+
+//*** Analogizer Interface V1.0 ***
+reg analogizer_ena;
+reg [3:0] analog_video_type;
+reg [4:0] game_cont_type /* synthesis keep */;
+reg [2:0] game_cont_sample_rate /* synthesis keep */;
+reg p1_interface /* synthesis keep */;
+reg p2_interface /* synthesis keep */;
+reg blank_pocket_screen;
+reg [3:0] DBG_CSYNC;
+reg DBG_DE;
+// wire BtnCasAplusSEL = 0;
+// wire PauseAsSelplusStart = 0;
+// wire ShowTestPattern = 0;
+
+wire [15:0] p1_btn;
+wire [15:0] p2_btn;
+//switch between Analogizer SNAC and Pocket Controls for P1,P2 only
+wire [15:0] p1_controls, p2_controls;
+wire [15:0] p1_stick_x, p1_stick_y;
+assign p1_controls = (p1_interface) ? p1_btn : cont1_key_s;
+assign p2_controls = (p2_interface) ? p2_btn : cont2_key_s;
+assign p1_stick_x = (p1_interface) ? 16'h0000: cont1_joy_x_calibrated;
+assign p1_stick_y = (p1_interface) ? 16'h0000: cont1_joy_y_calibrated; 
+
+  //create aditional switch to blank Pocket screen.
+  wire [23:0] video_rgb_pocket;
+  assign video_rgb_pocket = (blank_pocket_screen) ? 24'h000000: video_rgb_snes;
+ 
+//21_477_248
+openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(21_477_270)) analogizer (
+	.i_clk(clk_sys_21_48),
+	.i_rst((~pll_core_locked || reset_button_s)), //i_rst is active high
+	.i_ena(1'b1),
+	//Video interface
+	.analog_video_type(analog_video_type),
+  //.analog_video_type(4'd0),
+	// .R(video_rgb_snes[23:16]),
+	// .G(video_rgb_snes[15:8]),
+	// .B(video_rgb_snes[7:0]),
+  	.R(rgb_out[23:16]),
+	.G(rgb_out[15:8]),
+	.B(rgb_out[7:0]),
+	//.BLANKn(DBG_ANALOGIZER_DE),
+  .BLANKn(ANALOGIZER_DE),
+	.Hsync(SYNC), //composite SYNC on HSync.
+	.Vsync(1'b1),
+	.video_clk(clk_vid),
+	//SNAC interface
+	.conf_AB((game_cont_type >= 5'd16)),              //0 conf. A(default), 1 conf. B (see graph above)
+  //.conf_AB((5'd0)), 
+	.game_cont_type(game_cont_type), //0-15 Conf. A, 16-31 Conf. B
+  //.game_cont_type(5'd2), //NES
+	.game_cont_sample_rate(game_cont_sample_rate), //0 compatibility mode (slowest), 1 normal mode, 2 fast mode, 3 superfast mode
+	//.game_cont_sample_rate(3'b01), //0 compatibility mode (slowest), 1 normal mode, 2 fast mode, 3 superfast mode
+	.p1_btn_state(p1_btn),
+	.p2_btn_state(p2_btn),  
+	//Pocket Analogizer IO interface to the Pocket cartridge port
+	.cart_tran_bank2(cart_tran_bank2),
+	.cart_tran_bank2_dir(cart_tran_bank2_dir),
+	.cart_tran_bank3(cart_tran_bank3),
+	.cart_tran_bank3_dir(cart_tran_bank3_dir),
+	.cart_tran_bank1(cart_tran_bank1),
+	.cart_tran_bank1_dir(cart_tran_bank1_dir),
+	.cart_tran_bank0(cart_tran_bank0),
+	.cart_tran_bank0_dir(cart_tran_bank0_dir),
+	.cart_tran_pin30(cart_tran_pin30),
+	.cart_tran_pin30_dir(cart_tran_pin30_dir),
+	.cart_pin30_pwroff_reset(cart_pin30_pwroff_reset),
+	.cart_tran_pin31(cart_tran_pin31),
+	.cart_tran_pin31_dir(cart_tran_pin31_dir),
+	//debug
+	.o_stb()
+);
+/*[ANALOGIZER_HOOK_END]*/
 
   MAIN_SNES snes (
       .clk_mem_85_9 (clk_mem_85_9),
@@ -781,34 +901,34 @@ module core_top (
       .blend_enabled(blend_enabled_s),
 
       // Input
-      .p1_button_a(cont1_key_s[4]),
-      .p1_button_b(cont1_key_s[5]),
-      .p1_button_x(cont1_key_s[6]),
-      .p1_button_y(cont1_key_s[7]),
-      .p1_button_trig_l(cont1_key_s[8]),
-      .p1_button_trig_r(cont1_key_s[9]),
-      .p1_button_start(cont1_key_s[15]),
-      .p1_button_select(cont1_key_s[14]),
-      .p1_dpad_up(cont1_key_s[0]),
-      .p1_dpad_down(cont1_key_s[1]),
-      .p1_dpad_left(cont1_key_s[2]),
-      .p1_dpad_right(cont1_key_s[3]),
+      .p1_button_a(p1_controls[4]),
+      .p1_button_b(p1_controls[5]),
+      .p1_button_x(p1_controls[6]),
+      .p1_button_y(p1_controls[7]),
+      .p1_button_trig_l(p1_controls[8]),
+      .p1_button_trig_r(p1_controls[9]),
+      .p1_button_start(p1_controls[15]),
+      .p1_button_select(p1_controls[14]),
+      .p1_dpad_up(p1_controls[0]),
+      .p1_dpad_down(p1_controls[1]),
+      .p1_dpad_left(p1_controls[2]),
+      .p1_dpad_right(p1_controls[3]),
 
-      .p1_lstick_x(cont1_joy_x_calibrated),
-      .p1_lstick_y(cont1_joy_y_calibrated),
+      .p1_lstick_x(p1_stick_x),
+      .p1_lstick_y(p1_stick_y),
 
-      .p2_button_a(cont2_key_s[4]),
-      .p2_button_b(cont2_key_s[5]),
-      .p2_button_x(cont2_key_s[6]),
-      .p2_button_y(cont2_key_s[7]),
-      .p2_button_trig_l(cont2_key_s[8]),
-      .p2_button_trig_r(cont2_key_s[9]),
-      .p2_button_start(cont2_key_s[15]),
-      .p2_button_select(cont2_key_s[14]),
-      .p2_dpad_up(cont2_key_s[0]),
-      .p2_dpad_down(cont2_key_s[1]),
-      .p2_dpad_left(cont2_key_s[2]),
-      .p2_dpad_right(cont2_key_s[3]),
+      .p2_button_a(p2_controls[4]),
+      .p2_button_b(p2_controls[5]),
+      .p2_button_x(p2_controls[6]),
+      .p2_button_y(p2_controls[7]),
+      .p2_button_trig_l(p2_controls[8]),
+      .p2_button_trig_r(p2_controls[9]),
+      .p2_button_start(p2_controls[15]),
+      .p2_button_select(p2_controls[14]),
+      .p2_dpad_up(p2_controls[0]),
+      .p2_dpad_down(p2_controls[1]),
+      .p2_dpad_left(p2_controls[2]),
+      .p2_dpad_right(p2_controls[3]),
 
       .p3_button_a(cont3_key_s[4]),
       .p3_button_b(cont3_key_s[5]),
@@ -896,6 +1016,10 @@ module core_top (
       .cram1_lb_n(cram1_lb_n),
 
       // Video
+  //     	.FIELD(FIELD),
+	// .INTERLACE(INTERLACE),
+	// .HIGH_RES(HIGH_RES),
+	// .DOTCLK(DOTCLK_out),
       .hblank (h_blank),
       .vblank (v_blank),
       .hsync  (video_hs_snes),
@@ -940,7 +1064,7 @@ module core_top (
 
       .vblank_in(v_blank),
       .hblank_in(h_blank),
-      .rgb_in(video_rgb_snes),
+      .rgb_in(video_rgb_pocket),
 
       .hsync(video_hs),
       .vsync(video_vs),

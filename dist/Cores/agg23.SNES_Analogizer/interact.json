@@ -1,0 +1,285 @@
+{
+  "interact": {
+    "magic": "APF_VER_1",
+    "variables": [
+      {
+        "name": "Reset Core",
+        "id": 10,
+        "type": "action",
+        "enabled": true,
+        "address": "0x50",
+        "value": 1
+      },
+      {
+        "name": "CPU Turbo",
+        "id": 15,
+        "type": "check",
+        "enabled": true,
+        "address": "0x80",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "value": 1
+      },
+      {
+        "name": "SuperFX Turbo",
+        "id": 16,
+        "type": "check",
+        "enabled": true,
+        "address": "0x84",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "value": 1
+      },
+      {
+        "name": "Use Multitap",
+        "id": 20,
+        "type": "check",
+        "enabled": true,
+        "address": "0x100",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "value": 1
+      },
+      {
+        "name": "Controller Options",
+        "id": 30,
+        "type": "list",
+        "enabled": true,
+        "address": "0x104",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "options": [
+          {
+            "name": "Gamepad",
+            "value": 0
+          },
+          {
+            "name": "Super Scope",
+            "value": 1
+          },
+          {
+            "name": "Justifier",
+            "value": 3
+          },
+          {
+            "name": "Mouse",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "name": "D-Pad Aim Speed",
+        "id": 34,
+        "type": "slider_u32",
+        "enabled": true,
+        "address": "0x108",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 3,
+        "graphical": {
+          "signed": false,
+          "min": 1,
+          "max": 10,
+          "adjust_small": 1,
+          "adjust_large": 4
+        }
+      },
+      {
+        "name": "Joy Deadzone",
+        "id": 35,
+        "type": "slider_u32",
+        "enabled": true,
+        "address": "0x0000010C",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "graphical": {
+          "signed": false,
+          "min": 0,
+          "max": 64,
+          "adjust_small": 1,
+          "adjust_large": 10
+        }
+      },
+      {
+        "name": "Square Pixels",
+        "id": 42,
+        "type": "check",
+        "enabled": true,
+        "address": "0x200",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 0,
+        "value": 1
+      },
+      {
+        "name": "Pseudo Transparency",
+        "id": 41,
+        "type": "check",
+        "enabled": true,
+        "address": "0x204",
+        "persist": true,
+        "writeonly": true,
+        "defaultval": 1,
+        "value": 1
+      },
+      {
+        "name": "SNAC Adapter",
+        "id": 50,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF7000000",
+        "defaultval": "0x00",
+        "mask": "0xFFFFFFC0",
+        "options": [
+            {
+            "value": "0x00",
+            "name": "None"
+            },
+            {
+            "value": "0x01",
+            "name": "DB15"
+            },
+            {
+            "value": "0x02",
+            "name": "NES"
+            },
+            {
+            "value": "0x03",
+            "name": "SNES"
+            },
+            {
+            "value": "0x04",
+            "name": "PCE 2BTN"
+            },
+            {
+            "value": "0x05",
+            "name": "PCE 6BTN"
+            },
+            {
+            "value": "0x06",
+            "name": "PCE Multitap"
+            }
+        ]
+    },
+    {
+        "name": "Player Interface",
+        "id": 51,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF7000000",
+        "defaultval": "0x00",
+        "mask": "0xFFFFFF3F",
+        "options": [
+            {
+            "value": "0x0",
+            "name": "P1,P2 Pocket"
+            },
+            {
+            "value": "0x40",
+            "name": "P1 Pocket,P2 SNAC"
+            },
+            {
+            "value": "0x80",
+            "name": "P1 SNAC,P2 Pocket"
+            },
+            {
+                "value": "0xC0",
+                "name": "P1,P2 SNAC"
+            }
+        ]
+    },
+    {
+        "name": "SNAC Samp.rate",
+        "id": 52,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF7000000",
+        "defaultval": "0x400",
+        "mask": "0xFFFFF8FF",
+        "options": [
+            {
+            "value": "0x500",
+            "name": "60Hz Compat."
+            },
+            {
+            "value": "0x600",
+            "name": "120Hz Compat."
+            },
+            {
+            "value": "0x400",
+            "name": "SNES Compat."
+            },
+            {
+            "value": "0x0",
+            "name": "Compat."
+            },
+            {
+            "value": "0x100",
+            "name": "Normal"
+            },
+            {
+            "value": "0x200",
+            "name": "Fast"
+            },
+            {
+            "value": "0x300",
+            "name": "Very Fast"
+            }
+        ]
+    },
+    {
+        "name": "Analog Video Mode",
+        "id": 53,
+        "type": "list",
+        "enabled": true,
+        "persist": true,
+        "address": "0xF7000000",
+        "defaultval": "0x0",
+        "mask": "0xFFFF0FFF",
+        "options": [
+            {
+            "value": "0x0",
+            "name": "RGBS"
+            },
+            {
+            "value": "0x1000",
+            "name": "RGsB"
+            },
+            {
+            "value": "0x2000",
+            "name": "YPbPr"
+            }
+        ]
+    },
+    {
+      "name": "Blank Pocket Screen",
+      "id": 54,
+      "type": "list",
+      "enabled": true,
+      "persist": true,
+      "address": "0xF7000000",
+      "defaultval": "0x0",
+      "mask": "0xFFFEFFFF",
+      "options": [
+          {
+          "value": "0x0",
+          "name": "Off"
+          },
+          {
+          "value": "0x10000",
+          "name": "On"
+          }
+      ]
+  }
+    ],
+    "messages": []
+  }
+}

@@ -16,6 +16,9 @@ module scanline_filler #(
     output reg  hsync,
     output wire vsync,
 
+    output reg vblank,
+    output reg hblank,
+
     output reg de,
     output reg [23:0] rgb,
     output wire [7:0] snap_index,

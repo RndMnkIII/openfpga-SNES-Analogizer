@@ -805,7 +805,7 @@ module MAIN_SNES (
 
       .JOYSTICK1((joy_swap ^ raw_serial) ? joy0 : joy1),
       .JOYSTICK2(joy2),
-      .JOYSTICK3(joy3),
+      .JOYSTICK3(joy3)
       // .JOYSTICK4(joy4),
 
       // .MOUSE(ps2_mouse),
