@@ -321,7 +321,7 @@ module core_top (
       end
       32'hF7000000: begin 
         //bridge_rd_data <= {15'h0,analogizer_settings};
-        bridge_rd_data <= analogizer_settings;
+        bridge_rd_data <= {18'h0,analogizer_settings};
       end
       32'hF8xxxxxx: begin
         bridge_rd_data <= cmd_bridge_rd_data;
@@ -385,7 +385,13 @@ module core_top (
         //   blend_enabled <= bridge_wr_data[0];
         // end
         /*[ANALOGIZER_HOOK_BEGIN]*/
-				32'hF7000000: analogizer_settings  <=  bridge_wr_data[31:0];
+        32'h400: begin
+          yc_chroma_add <= bridge_wr_data[4:0];
+        end
+        32'h410: begin
+          yc_chroma_mult <= bridge_wr_data[4:0];
+        end 
+				32'hF7000000: analogizer_settings  <=  bridge_wr_data[13:0];
 				/*[ANALOGIZER_HOOK_END]*/
       endcase
     end
@@ -768,99 +774,212 @@ module core_top (
     rtc_time[7:0]  // Second
   };
 /*[ANALOGIZER_HOOK_BEGIN]*/
+synch_3 #(
+  .WIDTH(8)
+) yc_s (
+    {
+      yc_chroma_add,
+      yc_chroma_mult
+    },
+    {
+      yc_chroma_add_s,
+      yc_chroma_mult_s
+    },
+    clk_sys_21_48
+);
+
+//*** Analogizer Interface V1.2 ***
 //Pocket Menu settings
-// reg [31:0] analogizer_settings = 0;
-// wire [31:0] analogizer_settings_s;
-reg [31:0] analogizer_settings = 0;
-wire [31:0] analogizer_settings_s;
+reg [13:0] analogizer_settings = 0;
+wire [13:0] analogizer_settings_s;
+reg [4:0] yc_chroma_add;
+reg [4:0] yc_chroma_mult;
+wire [4:0] yc_chroma_add_s;
+wire [4:0] yc_chroma_mult_s;
 
 synch_3 #(.WIDTH(32)) sync_analogizer(analogizer_settings, analogizer_settings_s, clk_sys_21_48);
 
-always @(*) begin
-	game_cont_type                     = analogizer_settings_s[4:0];
-	p1_interface                       = analogizer_settings_s[7];
-	p2_interface                       = analogizer_settings_s[6];
-	game_cont_sample_rate              = analogizer_settings_s[10:8];
-	analog_video_type                  = analogizer_settings_s[15:12];
-	blank_pocket_screen                = analogizer_settings_s[16];
-  DBG_CSYNC                          = analogizer_settings_s[28:25];
-  DBG_DE                             = analogizer_settings_s[29];
-end
+  always @(*) begin
+    snac_game_cont_type   = analogizer_settings_s[4:0];
+    snac_cont_assignment  = analogizer_settings_s[9:6];
+    analogizer_video_type = analogizer_settings_s[13:10];
+  end
 
 wire clk_vid = video_rgb_clock; //video_rgb_clock; //Fixed one bit shift error on RGB channels.
-
-// reg SYNC;
-// reg DBG_ANALOGIZER_DE;
-// always @(posedge clk_sys_21_48) begin
-//   case(DBG_CSYNC)
-//     4'd0: SYNC <= ~^{video_hs_snes, video_vs_snes}; //XNOR
-//     4'd1: SYNC <= &{video_hs_snes, video_vs_snes};  //AND
-//     4'd2: SYNC <= ^{video_hs_snes, video_vs_snes};  //XOR
-//     4'd4: SYNC <= |{video_hs_snes, video_vs_snes};  //OR
-//     default: SYNC <= ^{video_hs_snes, video_vs_snes}; //DEFAULT: XOR
-//   endcase
-
-//   DBG_ANALOGIZER_DE <= (DBG_DE) ? ~ANALOGIZER_DE : ANALOGIZER_DE;
-// end
 wire SYNC = ~^{video_hs_snes, video_vs_snes};
 wire  ANALOGIZER_DE = ~(h_blank || v_blank);
-
-//*** Analogizer Interface V1.0 ***
-reg analogizer_ena;
-reg [3:0] analog_video_type;
-reg [4:0] game_cont_type /* synthesis keep */;
-reg [2:0] game_cont_sample_rate /* synthesis keep */;
-reg p1_interface /* synthesis keep */;
-reg p2_interface /* synthesis keep */;
-reg blank_pocket_screen;
-reg [3:0] DBG_CSYNC;
-reg DBG_DE;
-// wire BtnCasAplusSEL = 0;
-// wire PauseAsSelplusStart = 0;
-// wire ShowTestPattern = 0;
-
-wire [15:0] p1_btn;
-wire [15:0] p2_btn;
-//switch between Analogizer SNAC and Pocket Controls for P1,P2 only
-wire [15:0] p1_controls, p2_controls;
-wire [15:0] p1_stick_x, p1_stick_y;
-assign p1_controls = (p1_interface) ? p1_btn : cont1_key_s;
-assign p2_controls = (p2_interface) ? p2_btn : cont2_key_s;
-assign p1_stick_x = (p1_interface) ? 16'h0000: cont1_joy_x_calibrated;
-assign p1_stick_y = (p1_interface) ? 16'h0000: cont1_joy_y_calibrated; 
-
   //create aditional switch to blank Pocket screen.
   wire [23:0] video_rgb_pocket;
-  assign video_rgb_pocket = (blank_pocket_screen) ? 24'h000000: video_rgb_snes;
- 
-//21_477_248
-openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(21_477_270)) analogizer (
+  assign video_rgb_pocket = (analogizer_video_type[3]) ? 24'h000000: video_rgb_snes;
+
+reg analogizer_ena;
+reg [3:0] analogizer_video_type;
+reg [4:0] snac_game_cont_type /* synthesis keep */;
+reg [3:0] snac_cont_assignment /* synthesis keep */;
+
+
+//switch between Analogizer SNAC and Pocket Controls for P1-P4 (P3,P4 when uses PCEngine Multitap)
+  wire [15:0] p1_btn, p2_btn, p3_btn, p4_btn;
+  reg [15:0] p1_controls, p2_controls, p3_controls, p4_controls;
+  reg [15:0] p1_stick_x, p1_stick_y;
+
+  always @(posedge clk_sys_21_48) begin
+    if(snac_game_cont_type == 5'h0) begin //SNAC is disabled
+                  p1_controls <= cont1_key_s;
+                  p1_stick_x  <= cont1_joy_x_calibrated;
+                  p1_stick_y  <= cont1_joy_y_calibrated;
+                  p2_controls <= cont2_key_s;
+                  p3_controls <= cont3_key_s;
+                  p4_controls <= cont4_key_s;
+    end
+    else begin
+      case(snac_cont_assignment)
+      4'h0:    begin 
+                  p1_controls <= p1_btn;
+                  p1_stick_x  <= 16'd0;
+                  p1_stick_y  <= 16'd0;
+                  p2_controls <= cont2_key_s;
+                  p3_controls <= cont3_key_s;
+                  p4_controls <= cont4_key_s;
+                end
+      4'h1:    begin 
+                  p1_controls <= cont1_key_s;
+                  p1_stick_x  <= cont1_joy_x_calibrated;
+                  p1_stick_y  <= cont1_joy_y_calibrated;
+                  p2_controls <= p1_btn;
+                  p3_controls <= cont3_key_s;
+                  p4_controls <= cont4_key_s;
+                end
+      4'h2:    begin
+                  p1_controls <= p1_btn;
+                  p1_stick_x  <= 16'd0;
+                  p1_stick_y  <= 16'd0;
+                  p2_controls <= p2_btn;
+                  p3_controls <= cont3_key_s;
+                  p4_controls <= cont4_key_s;
+                end
+      4'h3:    begin
+                  p1_controls <= p2_btn;
+                  p1_stick_x  <= 16'd0;
+                  p1_stick_y  <= 16'd0;
+                  p2_controls <= p1_btn;
+                  p3_controls <= cont3_key_s;
+                  p4_controls <= cont4_key_s;
+                end
+      4'h4:    begin
+                  p1_controls <= p1_btn;
+                  p1_stick_x  <= 16'd0;
+                  p1_stick_y  <= 16'd0;
+                  p2_controls <= p2_btn;
+                  p3_controls <= p3_btn;
+                  p4_controls <= p4_btn;
+                end
+      4'h5:    begin
+                  p1_controls <= p4_btn;
+                  p1_stick_x  <= 16'd0;
+                  p1_stick_y  <= 16'd0;
+                  p2_controls <= p3_btn;
+                  p3_controls <= p2_btn;
+                  p4_controls <= p1_btn;
+                end
+      4'h6:    begin
+                  p1_controls <= cont1_key_s;
+                  p2_controls <= cont2_key_s;
+                  p3_controls <= p1_btn;
+                  p4_controls <= p2_btn;
+                end
+      default: begin
+                  p1_controls <= cont1_key_s;
+                  p1_stick_x  <= cont1_joy_x_calibrated;
+                  p1_stick_y  <= cont1_joy_y_calibrated;
+                  p2_controls <= cont2_key_s;
+                  p3_controls <= cont3_key_s;
+                  p4_controls <= cont4_key_s;
+                end
+      endcase
+    end
+  end
+
+
+// Video Y/C Encoder settings
+// Follows the Mike Simone Y/C encoder settings:
+// https://github.com/MikeS11/MiSTerFPGA_YC_Encoder
+// SET PAL and NTSC TIMING and pass through status bits. ** YC must be enabled in the qsf file **
+wire [39:0] CHROMA_PHASE_INC;
+wire [26:0] COLORBURST_RANGE;
+wire [4:0] CHROMA_ADD;
+wire [4:0] CHROMA_MULT;
+wire PALFLAG;
+
+parameter NTSC_REF = 3.579545;   
+parameter PAL_REF = 4.43361875;
+// Colorburst Lenth Calculation to send to Y/C Module, based on the CLK_VIDEO of the core
+localparam [6:0] COLORBURST_START = (3.7 * (CLK_VIDEO_NTSC/NTSC_REF));
+localparam [9:0] COLORBURST_NTSC_END = (9 * (CLK_VIDEO_NTSC/NTSC_REF)) + COLORBURST_START;
+localparam [9:0] COLORBURST_PAL_END = (10 * (CLK_VIDEO_PAL/PAL_REF)) + COLORBURST_START;
+
+// Parameters to be modifed
+//parameter CLK_VIDEO_NTSC = 42.954545; // Must be filled E.g XX.X Hz - CLK_VIDEO
+//parameter CLK_VIDEO_PAL  = 42.562740; // Must be filled E.g XX.X Hz - CLK_VIDEO
+//NTSC 21.4772725
+parameter CLK_VIDEO_NTSC = 21.4772725;
+//PAL 21.28137
+parameter CLK_VIDEO_PAL  = 21.28137;
+//PAL CLOCK FREQUENCY SHOULD BE 42.56274
+//localparam [39:0] NTSC_PHASE_INC = 40'd91625968981; //d91_625_958_315; //d91_625_968_981; // ((NTSC_REF**2^40) / CLK_VIDEO_NTSC) - SNES Example;
+localparam [39:0] NTSC_PHASE_INC = 40'd183251916632; //for CLK_VIDEO_NTSC = 21.4772725
+//localparam [39:0] PAL_PHASE_INC = 40'd114532461227; // ((PAL_REF*2^40) / CLK_VIDEO_PAL)- SNES Example;
+localparam [39:0] PAL_PHASE_INC =  40'd229064922453; //for CLK_VIDEO_PAL  = 21.28137;
+
+assign CHROMA_PHASE_INC = ((analogizer_video_type == 4'h4)|| (analogizer_video_type == 4'hC)) ? PAL_PHASE_INC : NTSC_PHASE_INC; 
+assign PALFLAG = (analogizer_video_type == 4'h4) || (analogizer_video_type == 4'hC); 
+assign CHROMA_ADD = yc_chroma_add_s;
+assign CHROMA_MULT = yc_chroma_mult_s;
+//assign CHROMA_ADD = 5'd0;
+//assign CHROMA_MULT = 5'd0;
+assign COLORBURST_RANGE = {COLORBURST_START, COLORBURST_NTSC_END, COLORBURST_PAL_END}; // Pass colorburst length
+
+generate
+  if (PAL_PLL) begin
+    parameter MASTER_CLK_FREQ = 21_281_370;
+  end else begin
+    parameter MASTER_CLK_FREQ = 21_477_270;
+  end
+endgenerate
+
+openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(MASTER_CLK_FREQ)) analogizer (
 	.i_clk(clk_sys_21_48),
 	.i_rst((~pll_core_locked || reset_button_s)), //i_rst is active high
 	.i_ena(1'b1),
 	//Video interface
-	.analog_video_type(analog_video_type),
+	.analog_video_type(analogizer_video_type),
   //.analog_video_type(4'd0),
-	// .R(video_rgb_snes[23:16]),
-	// .G(video_rgb_snes[15:8]),
-	// .B(video_rgb_snes[7:0]),
-  	.R(rgb_out[23:16]),
-	.G(rgb_out[15:8]),
-	.B(rgb_out[7:0]),
-	//.BLANKn(DBG_ANALOGIZER_DE),
+	.R(video_rgb_snes[23:16]),
+	.G(video_rgb_snes[15:8]),
+	.B(video_rgb_snes[7:0]),
+  .Hblank(h_blank),
+  .Vblank(v_blank),
   .BLANKn(ANALOGIZER_DE),
-	.Hsync(SYNC), //composite SYNC on HSync.
-	.Vsync(1'b1),
+  .Csync(SYNC),
+	.Hsync(video_hs_snes), //composite SYNC on HSync.
+	.Vsync(video_vs_snes),
 	.video_clk(clk_vid),
+  //Video Y/C Encoder interface
+  .PALFLAG(PALFLAG),
+	.MULFLAG(1'b0),
+	.CHROMA_ADD(CHROMA_ADD),
+	.CHROMA_MULT(CHROMA_MULT),
+	.CHROMA_PHASE_INC(CHROMA_PHASE_INC),
+	.COLORBURST_RANGE(COLORBURST_RANGE),
+  //Video SVGA Scandoubler interface
+  .ce_divider(3'd0), //div4
 	//SNAC interface
-	.conf_AB((game_cont_type >= 5'd16)),              //0 conf. A(default), 1 conf. B (see graph above)
-  //.conf_AB((5'd0)), 
-	.game_cont_type(game_cont_type), //0-15 Conf. A, 16-31 Conf. B
-  //.game_cont_type(5'd2), //NES
-	.game_cont_sample_rate(game_cont_sample_rate), //0 compatibility mode (slowest), 1 normal mode, 2 fast mode, 3 superfast mode
-	//.game_cont_sample_rate(3'b01), //0 compatibility mode (slowest), 1 normal mode, 2 fast mode, 3 superfast mode
+	.conf_AB((snac_game_cont_type >= 5'd16)),              //0 conf. A(default), 1 conf. B (see graph above)
+	.game_cont_type(snac_game_cont_type), //0-15 Conf. A, 16-31 Conf. B
 	.p1_btn_state(p1_btn),
 	.p2_btn_state(p2_btn),  
+  .p3_btn_state(p3_btn),
+	.p4_btn_state(p4_btn),   
 	//Pocket Analogizer IO interface to the Pocket cartridge port
 	.cart_tran_bank2(cart_tran_bank2),
 	.cart_tran_bank2_dir(cart_tran_bank2_dir),
@@ -930,31 +1049,31 @@ openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(21_477_270)) analogizer (
       .p2_dpad_left(p2_controls[2]),
       .p2_dpad_right(p2_controls[3]),
 
-      .p3_button_a(cont3_key_s[4]),
-      .p3_button_b(cont3_key_s[5]),
-      .p3_button_x(cont3_key_s[6]),
-      .p3_button_y(cont3_key_s[7]),
-      .p3_button_trig_l(cont3_key_s[8]),
-      .p3_button_trig_r(cont3_key_s[9]),
-      .p3_button_start(cont3_key_s[15]),
-      .p3_button_select(cont3_key_s[14]),
-      .p3_dpad_up(cont3_key_s[0]),
-      .p3_dpad_down(cont3_key_s[1]),
-      .p3_dpad_left(cont3_key_s[2]),
-      .p3_dpad_right(cont3_key_s[3]),
+      .p3_button_a(p3_controls[4]),
+      .p3_button_b(p3_controls[5]),
+      .p3_button_x(p3_controls[6]),
+      .p3_button_y(p3_controls[7]),
+      .p3_button_trig_l(p3_controls[8]),
+      .p3_button_trig_r(p3_controls[9]),
+      .p3_button_start(p3_controls[15]),
+      .p3_button_select(p3_controls[14]),
+      .p3_dpad_up(p3_controls[0]),
+      .p3_dpad_down(p3_controls[1]),
+      .p3_dpad_left(p3_controls[2]),
+      .p3_dpad_right(p3_controls[3]),
 
-      .p4_button_a(cont4_key_s[4]),
-      .p4_button_b(cont4_key_s[5]),
-      .p4_button_x(cont4_key_s[6]),
-      .p4_button_y(cont4_key_s[7]),
-      .p4_button_trig_l(cont4_key_s[8]),
-      .p4_button_trig_r(cont4_key_s[9]),
-      .p4_button_start(cont4_key_s[15]),
-      .p4_button_select(cont4_key_s[14]),
-      .p4_dpad_up(cont4_key_s[0]),
-      .p4_dpad_down(cont4_key_s[1]),
-      .p4_dpad_left(cont4_key_s[2]),
-      .p4_dpad_right(cont4_key_s[3]),
+      .p4_button_a(p4_controls[4]),
+      .p4_button_b(p4_controls[5]),
+      .p4_button_x(p4_controls[6]),
+      .p4_button_y(p4_controls[7]),
+      .p4_button_trig_l(p4_controls[8]),
+      .p4_button_trig_r(p4_controls[9]),
+      .p4_button_start(p4_controls[15]),
+      .p4_button_select(p4_controls[14]),
+      .p4_dpad_up(p4_controls[0]),
+      .p4_dpad_down(p4_controls[1]),
+      .p4_dpad_left(p4_controls[2]),
+      .p4_dpad_right(p4_controls[3]),
 
       // ROM loading
       .ioctl_download(ioctl_download),
@@ -966,6 +1085,8 @@ openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(21_477_270)) analogizer (
       .rom_size(rom_size),
       .ram_size(ram_size),
       .PAL(PAL),
+      .DIS_SHORTLINE(1'b1), //sNTSC-DeJitter mode Enabled -> 1'b1
+
 
       // Save input/output
       .save_download(save_download_s),

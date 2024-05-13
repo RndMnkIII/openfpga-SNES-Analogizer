@@ -1,17 +1,18 @@
 module vga_out
 (
 	input wire        clk,
+	input wire        ypbpr_en,
 
-	// input wire        hsync,
-	// input wire        vsync,
+	input wire        hsync,
+	input wire        vsync,
 	input wire        csync,
 	input wire        de,
 
 	input  wire [23:0] din,
 	output wire [23:0] dout,
 
-	//output reg    hsync_o,
-	// output reg    vsync_o,
+	output reg    hsync_o,
+	output reg    vsync_o,
 	output reg    csync_o,
 	output reg    de_o
 );
@@ -34,10 +35,9 @@ always @(posedge clk) begin
 	reg [18:0] y_1g, pb_1g, pr_1g;
 	reg [18:0] y_1b, pb_1b, pr_1b;
 	reg [18:0] y_2, pb_2, pr_2;
-	// reg hsync2, vsync2, csync2, de2;
-	// reg hsync1, vsync1, csync1, de1;
-	reg csync2, de2;
-	reg csync1, de1;
+	reg [23:0] din1, din2;
+	reg hsync2, vsync2, csync2, de2;
+	reg hsync1, vsync1, csync1, de1;
 
 	y_1r <= {red, 6'd0} + {red, 3'd0} + {red, 2'd0} + red;
 	pb_1r <= 19'd32768 - ({red, 5'd0} + {red, 3'd0} + {red, 1'd0});
@@ -59,12 +59,14 @@ always @(posedge clk) begin
 	pb <= pb_2[18] ? 8'd0 : pb_2[16] ? 8'd255 : pb_2[15:8];
 	pr <= pr_2[18] ? 8'd0 : pr_2[16] ? 8'd255 : pr_2[15:8];
 
-	// hsync_o <= hsync2; hsync2 <= hsync1; hsync1 <= hsync;
-	// vsync_o <= vsync2; vsync2 <= vsync1; vsync1 <= vsync;
+	hsync_o <= hsync2; hsync2 <= hsync1; hsync1 <= hsync;
+	vsync_o <= vsync2; vsync2 <= vsync1; vsync1 <= vsync;
 	csync_o <= csync2; csync2 <= csync1; csync1 <= csync;
 	de_o    <= de2;    de2    <= de1;    de1    <= de;
+
+	rgb <= din2; din2 <= din1; din1 <= din;
 end
 
-assign dout = {pr, y, pb};
+assign dout = ypbpr_en ? {pr, y, pb} : rgb;
 
 endmodule

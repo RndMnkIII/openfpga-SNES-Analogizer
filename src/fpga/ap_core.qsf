@@ -750,7 +750,7 @@ set_parameter -name USE_DSPn '1 -entity MAIN_SNES
 set_parameter -name USE_SPC7110 '0 -entity MAIN_SNES
 set_parameter -name USE_BSX '0 -entity MAIN_SNES
 set_parameter -name USE_MSU '0 -entity MAIN_SNES
-set_parameter -name PAL_PLL '0 -entity core_top
+set_parameter -name PAL_PLL '1 -entity core_top
 set_global_assignment -name QIP_FILE analogizer/analogizer.qip
 set_global_assignment -name SYSTEMVERILOG_FILE core/rtl/mister_top/scanline_filler.sv
 set_global_assignment -name SYSTEMVERILOG_FILE core/core_top.sv

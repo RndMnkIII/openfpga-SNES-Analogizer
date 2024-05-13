@@ -84,6 +84,7 @@ module MAIN_SNES (
     input wire [3:0] rom_size,
     input wire [3:0] ram_size,
     input wire PAL,
+    input wire DIS_SHORTLINE,
 
     // Saves
     input wire save_download,
@@ -134,6 +135,10 @@ module MAIN_SNES (
     output wire cram1_lb_n,
 
     // Video
+    output wire DOTCLK,
+    output wire FIELD, 
+    output wire INTERLACE,
+    output wire HIGH_RES,
     output wire vblank,
     output wire hblank,
     output wire vsync,
@@ -306,6 +311,8 @@ module MAIN_SNES (
   wire hblank_n;
   wire dotclk;
 
+  assign DOTCLK = dotclk;
+
   assign vblank = ~vblank_n;
   assign hblank = ~hblank_n;
 
@@ -335,6 +342,7 @@ module MAIN_SNES (
       .ROM_MASK(rom_mask),
       .RAM_MASK(ram_mask),
       .PAL(PAL),
+      .DIS_SHORTLINE(DIS_SHORTLINE),
       .BLEND(blend_enabled),
 
       .ROM_ADDR(ROM_ADDR),
@@ -379,9 +387,9 @@ module MAIN_SNES (
       .G(G),
       .B(B),
 
-      // .FIELD(FIELD), // TODO
-      // .INTERLACE(INTERLACE),
-      // .HIGH_RES(HIGH_RES),
+      .FIELD(FIELD),
+      .INTERLACE(INTERLACE),
+      .HIGH_RES(HIGH_RES),
       .DOTCLK(dotclk),
 
       .HBLANKn(hblank_n),

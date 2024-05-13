@@ -48,9 +48,10 @@ module pcengine_game_controller #(parameter MASTER_CLK_FREQ=50_000_000, paramete
 (
     input wire i_clk,
 	input wire i_rst,
-    input wire [4:0] game_controller_type, //4 2btn, 5 6btn
+    input wire [3:0] game_controller_type, //0X4 2btn,0X5 6btn
 	input wire i_stb,
     output reg [15:0] player_btn_state,
+    output reg busy,
 
     //SNAC Game controller interface
     output wire o_clr,
@@ -65,11 +66,11 @@ module pcengine_game_controller #(parameter MASTER_CLK_FREQ=50_000_000, paramete
     parameter DATA  = 3'b100;
 
     //store module settings
-    reg [4:0] game_controller_type_r;
+    reg [3:0] game_controller_type_r;
 
     wire pulse_clr = PULSE_CLR_LINE;
 
-    reg [2:0] state ;
+    reg [2:0] state /* synthesis preserve */;
 
     reg [3:0] counter;
     reg [3:0] scan_number;
@@ -108,14 +109,18 @@ module pcengine_game_controller #(parameter MASTER_CLK_FREQ=50_000_000, paramete
                         //follow Pocket game controls order:                                    D           C           B           A           E           F
 
                         
-                        if(game_controller_type_r == 5'd5) begin
+                        if(game_controller_type_r == 4'h5) begin
+                            //6btn mapping
                             //                    START    SELECT   R3 L3 R2 L2 R1        L1        Y        X        B        A        RIGH     LEFT     DOWN     UP 
                             player_btn_state <= ~{pb_r[7], pb_r[6], 4'b1111,    pb_r[11], pb_r[10], pb_r[9], pb_r[8], pb_r[5], pb_r[4], pb_r[1], pb_r[3], pb_r[2], pb_r[0]};
                         end
-                        else begin
+                        else if (game_controller_type_r == 4'h4) begin
                             //2btn mapping RUN+A = X, RUN+B = Y not implemented
                             //                    START    SELECT   R3 L3 R2 L2 R1 L1 Y     X     B        A        RIGH     LEFT     DOWN     UP 
                             player_btn_state <= ~{pb_r[7], pb_r[6], 6'b111111,        1'b1, 1'b1, pb_r[5], pb_r[4], pb_r[1], pb_r[3], pb_r[2], pb_r[0]};
+                        end
+                        else begin
+                            player_btn_state <= 16'h0;
                         end
                         counter <= 0;
                         scan_number <= 0;
@@ -125,6 +130,7 @@ module pcengine_game_controller #(parameter MASTER_CLK_FREQ=50_000_000, paramete
                         counter_top_value <= 4'd4;
                         sel_internal <= 1'b1;
                         clr_internal <= pulse_clr;
+                        busy <= 1'b1;
                         //if (~btn6) pb_r <= 12'hfff;
                         state <= CLR;
                     end
@@ -175,6 +181,7 @@ module pcengine_game_controller #(parameter MASTER_CLK_FREQ=50_000_000, paramete
                         //the gamepads buton state are fetched at the end of DATA phase
                         if(counter == counter_top_value) begin
                             state <= IDLE;
+                            busy <= 1'b0;
                         end  
                     end        
                 endcase       
@@ -182,6 +189,6 @@ module pcengine_game_controller #(parameter MASTER_CLK_FREQ=50_000_000, paramete
         end
     end
 
-    assign o_clr = (game_controller_type_r == 5'd0) ? 1'b0 : clr_internal;
-    assign o_sel = (game_controller_type_r == 5'd0) ? 1'b0 : sel_internal;
+    assign o_clr = (game_controller_type_r == 4'd0) ? 1'b0 : clr_internal;
+    assign o_sel = (game_controller_type_r == 4'd0) ? 1'b0 : sel_internal;
 endmodule
