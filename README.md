@@ -1,7 +1,6 @@
 # ADAPTED FOR ANALOGIZER: SNES for Analogue Pocket
-[1.0] Analogizer initial support added by RndMnkIII. See more in the Analogizer main repository: [Analogizer](https://github.com/RndMnkIII/Analogizer) 06/04/2024.
-### To Fix:
-SNES core appears to have sync jitter can show image artifacts as serrated lines or intervals of blanking video with scalers as OSSC.
+[1.0] Analogizer support added by RndMnkIII. See more in the Analogizer main repository: [Analogizer](https://github.com/RndMnkIII/Analogizer) 13/05/2024.
+Fixed sync jitter. The core now can output RGBS, RGsB, YPbPr, Y/C, Composite video and SVGA scandoubler (50% scanlines) video signals.
 
 Ported from the original core developed by [srg320](https://github.com/srg320) ([Patreon](https://www.patreon.com/srg320)). Latest upstream available at https://github.com/MiSTer-devel/SNES_MiSTer.
 
