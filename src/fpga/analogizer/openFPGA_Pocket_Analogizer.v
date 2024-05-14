@@ -1,27 +1,32 @@
 //This module encapsulates all Analogizer adapter signals
 // Original work by @RndMnkIII. 
-// Date: 01/2024 
-// Release: 1.0
+// Date: 05/2024 
+// Releases: 
+// 1.0 Initial RGBS output mode
+// 1.1 Added SOG modes: RGsB, YPbPt
+// 1.2 Added Mike Simon Y/C module, Scandoubler SVGA Mist module.     
 
-// *** Analogizer R.1 adapter ***
+// *** Analogizer R.2 adapter ***
+// * WHEN SOG SWITCH IS IN ON POSITION, OUTPUTS CSYNC ON G CHANNEL
+// # WHEN YPbPr VIDEO OUTPUT IS SELECTED, Y->G, Pr->R, Pb->B
 //Pin mappings:                                               VGA CONNECTOR                                                                                          USB3 TYPE A FEMALE CONNECTOR (SNAC)
 //                        ______________________________________________________________________________________________________________________________________________________________________________________________________                             
-//                       /                              VS  HS          R   G   B                                                                  1      2       3       4      5       6       7       8       9              \
+//                       /                              VS  HS          R#  G*# B#                                                                  1      2       3       4      5       6       7       8       9              \
 //                       |                              |   |           |   |   |                                                                 VBUS   D-      D+      GND     RX-     RX+     GND_D   TX-     TX+             |
 //FUNCTION:              |                              |   |           |   |   |                                                                 +5V    OUT1    OUT2    GND     IO3     IN4     IO5     IO6     IN7             |
 //                       |  A                           |   |           |   |   |                                                                          ^       ^              ^       |       ^       ^       |              |
-//                       |  N                           |   |           |   |   |                                                                          |       |              V       V       V       V       V              |
-//                       |  A                           |   |           |   |   |                                                                                                                                                |                              
-//                       |  L                           |   |           |   |   |                                                                                                                                                |            
-//                       |  O                           |   |         +------------+                                                                                                                                             |
-//  PIN DIR:             |  G                           |   |         |            |---------------------------------------------------------------------------------------------------------+                                   |
-//  ^ OUTPUT             |  I                           |   |         |  RGB DAC   |                                                                                                         |                                   |
-//  V INPUT              |  Z                           |   |         |            |===================================================================++                                    |                                   |
-//                       |  E                           |   |         +------------+                                                                   ||                                    |                                   |
-//                       |  R                           |   |            ||  |   |                                                                     ||                                    |                                   |         
+//                       |  N             SOG           |   |           |   |   |                                                                          |       |              V       V       V       V       V              |
+//                       |  A           -------         |   |           |   |   |                                                                                                                                                |                              
+//                       |  O    OFF   |   S   |--GND   |   |         +------------+                                                                                                                                             |
+//                       |  L          |   W   |        |   |   SYNC  |            |                                                                                                                                             |            
+//  PIN DIR:             |  G          |   I   +--------------------->|            |---------------------------------------------------------------------------------------------------------+                                   |
+//  ^ OUTPUT             |  I          |   T   |        |   |         |  RGB DAC   |                                                                                                         |                                   |
+//  V INPUT              |  Z          |   C   |        |   |         |            |===================================================================++                                    |                                   |
+//                       |  E    ON ===|   H   |--------+   |         +------------+                                                                   ||                                    |                                   |
+//                       |  R           -------         |   |            ||  |   | /BLANK                                                              ||                                    |                                   |         
 //                       |                              |   +--------+   ||  |   +------------------------------------------------------------------+  ||                                    |                                   |                                  |
 //                       |  R                           +------+     |   ||  +===============================++                                     |  ||                                    |                                   |
-//                       |  1                                  |     |   ||                                  ||                                     |  ||                                    |                                   |
+//                       |  2                                  |     |   ||                                  ||                                     |  ||                                    |                                   |
 //                       |     CONF.B        IO5V       ---    |     |   \\================================  \\================================     |  \\================================   VID               IO3^  IO6^         |  
 //                       |     CONF.A   IN4  ---  IN7   IO3V   VS    HS    R0    R1    R2    R3    R4    R5    G0    G1    G2    G3    G4    G5   /BLK   B0    B1    B2    B3    B4    B5   CLK  OUT1   OUT2  IO5^  IO6V         |  
 //                       |      __3.3V__ |___ | __ |_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____^__GND__    |                                
@@ -82,6 +87,7 @@ module openFPGA_Pocket_Analogizer #(parameter MASTER_CLK_FREQ=50_000_000) (
 	input wire video_clk,
 	//Video Y/C Encoder interface
 	input wire PALFLAG,
+	input wire CVBS,
 	input wire MULFLAG,
 	input wire [4:0] CHROMA_ADD,
 	input wire [4:0] CHROMA_MULT,
@@ -233,6 +239,7 @@ module openFPGA_Pocket_Analogizer #(parameter MASTER_CLK_FREQ=50_000_000) (
 	(
 		.clk(i_clk),
 		.PAL_EN(PALFLAG),
+		.CVBS(CVBS),
 		.PHASE_INC(CHROMA_PHASE_INC),
 		.COLORBURST_RANGE(COLORBURST_RANGE),
 		.MULFLAG(MULFLAG),

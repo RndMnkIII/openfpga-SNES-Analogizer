@@ -1,7 +1,7 @@
 # ADAPTED FOR ANALOGIZER: SNES for Analogue Pocket
-[1.0] Analogizer support added by RndMnkIII. See more in the Analogizer main repository: [Analogizer](https://github.com/RndMnkIII/Analogizer) 13/05/2024.
+* [1.0] Analogizer support added by RndMnkIII. See more in the Analogizer main repository: [Analogizer](https://github.com/RndMnkIII/Analogizer) [13/05/2024].
 Fixed sync jitter. The core now can output RGBS, RGsB, YPbPr, Y/C, Composite video and SVGA scandoubler (50% scanlines) video signals.
-
+* [1.1] Fixed FX games error with 1.0. Added CVBS Y/C video output for passive Y/C adapters. [14/05/2024]
 Ported from the original core developed by [srg320](https://github.com/srg320) ([Patreon](https://www.patreon.com/srg320)). Latest upstream available at https://github.com/MiSTer-devel/SNES_MiSTer.
 
 Please report any issues encountered to this repo. Most likely any problems are a result of my port, not the original core. Issues will be upstreamed as necessary.

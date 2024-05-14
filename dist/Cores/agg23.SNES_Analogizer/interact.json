@@ -279,36 +279,26 @@
         ]
     },
     {
-      "name": "Chroma Add",
+      "name": "Sync dejitter",
       "id": 53,
-      "type": "slider_u32",
+      "type": "check",
       "enabled": true,
-      "address": "0x00000400",
+      "address": "0x400",
       "persist": true,
       "writeonly": true,
       "defaultval": 0,
-      "graphical": {
-        "min": 0,
-        "max":31,
-        "adjust_small": 1,
-        "adjust_large": 1
-      }
+      "value": 1
     },
     {
-      "name": "Chroma Multiply",
+      "name": "CVBS",
       "id": 54,
-      "type": "slider_u32",
+      "type": "check",
       "enabled": true,
-      "address": "0x00000410",
+      "address": "0x410",
       "persist": true,
       "writeonly": true,
       "defaultval": 0,
-      "graphical": {
-        "min": 0,
-        "max":31,
-        "adjust_small": 1,
-        "adjust_large": 1
-      }
+      "value": 1
     }
     ],
     "messages": []

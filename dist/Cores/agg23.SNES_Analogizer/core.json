@@ -4,11 +4,11 @@
     "metadata": {
       "platform_ids": ["snes"],
       "shortname": "SNES_Analogizer",
-      "description": "ANALOGIZER Super Nintendo and Super Famicom. RGBS, RGsB, YPbPr, Y/C and scandoubler SVGA video output",
+      "description": "ANALOGIZER Super Nintendo and Super Famicom. RGBS, RGsB, YPbPr, Y/C, CVBS and scandoubler SVGA video output",
       "author": "agg23",
       "url": "https://github.com/RndMnkIII/openfpga-SNES-Analogizer",
-      "version": "1.0",
-      "date_release": "2024-05-13"
+      "version": "1.1",
+      "date_release": "2024-05-14"
     },
     "framework": {
       "target_product": "Analogue Pocket",

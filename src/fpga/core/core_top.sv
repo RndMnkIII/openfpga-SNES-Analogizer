@@ -386,10 +386,10 @@ module core_top (
         // end
         /*[ANALOGIZER_HOOK_BEGIN]*/
         32'h400: begin
-          yc_chroma_add <= bridge_wr_data[4:0];
+          sync_dejitter <= bridge_wr_data[0];
         end
         32'h410: begin
-          yc_chroma_mult <= bridge_wr_data[4:0];
+          yc_cvbs <= bridge_wr_data[0];
         end 
 				32'hF7000000: analogizer_settings  <=  bridge_wr_data[13:0];
 				/*[ANALOGIZER_HOOK_END]*/
@@ -775,15 +775,15 @@ module core_top (
   };
 /*[ANALOGIZER_HOOK_BEGIN]*/
 synch_3 #(
-  .WIDTH(8)
+  .WIDTH(2)
 ) yc_s (
     {
-      yc_chroma_add,
-      yc_chroma_mult
+      sync_dejitter,
+      yc_cvbs
     },
     {
-      yc_chroma_add_s,
-      yc_chroma_mult_s
+      sync_dejitter_s,
+      yc_cvbs_s
     },
     clk_sys_21_48
 );
@@ -792,18 +792,19 @@ synch_3 #(
 //Pocket Menu settings
 reg [13:0] analogizer_settings = 0;
 wire [13:0] analogizer_settings_s;
-reg [4:0] yc_chroma_add;
-reg [4:0] yc_chroma_mult;
-wire [4:0] yc_chroma_add_s;
-wire [4:0] yc_chroma_mult_s;
+reg sync_dejitter;
+reg yc_cvbs;
+wire sync_dejitter_s;
+wire yc_cvbs_s;
 
-synch_3 #(.WIDTH(32)) sync_analogizer(analogizer_settings, analogizer_settings_s, clk_sys_21_48);
 
-  always @(*) begin
-    snac_game_cont_type   = analogizer_settings_s[4:0];
-    snac_cont_assignment  = analogizer_settings_s[9:6];
-    analogizer_video_type = analogizer_settings_s[13:10];
-  end
+synch_3 #(.WIDTH(14)) sync_analogizer(analogizer_settings, analogizer_settings_s, clk_sys_21_48);
+
+always @(*) begin
+  snac_game_cont_type   = analogizer_settings_s[4:0];
+  snac_cont_assignment  = analogizer_settings_s[9:6];
+  analogizer_video_type = analogizer_settings_s[13:10];
+end
 
 wire clk_vid = video_rgb_clock; //video_rgb_clock; //Fixed one bit shift error on RGB channels.
 wire SYNC = ~^{video_hs_snes, video_vs_snes};
@@ -900,7 +901,6 @@ reg [3:0] snac_cont_assignment /* synthesis keep */;
     end
   end
 
-
 // Video Y/C Encoder settings
 // Follows the Mike Simone Y/C encoder settings:
 // https://github.com/MikeS11/MiSTerFPGA_YC_Encoder
@@ -933,8 +933,8 @@ localparam [39:0] PAL_PHASE_INC =  40'd229064922453; //for CLK_VIDEO_PAL  = 21.2
 
 assign CHROMA_PHASE_INC = ((analogizer_video_type == 4'h4)|| (analogizer_video_type == 4'hC)) ? PAL_PHASE_INC : NTSC_PHASE_INC; 
 assign PALFLAG = (analogizer_video_type == 4'h4) || (analogizer_video_type == 4'hC); 
-assign CHROMA_ADD = yc_chroma_add_s;
-assign CHROMA_MULT = yc_chroma_mult_s;
+assign CHROMA_ADD = 5'd0;
+assign CHROMA_MULT = 5'd0;
 //assign CHROMA_ADD = 5'd0;
 //assign CHROMA_MULT = 5'd0;
 assign COLORBURST_RANGE = {COLORBURST_START, COLORBURST_NTSC_END, COLORBURST_PAL_END}; // Pass colorburst length
@@ -965,7 +965,8 @@ openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(MASTER_CLK_FREQ)) analogizer (
 	.Vsync(video_vs_snes),
 	.video_clk(clk_vid),
   //Video Y/C Encoder interface
-  .PALFLAG(PALFLAG),
+  .PALFLAG(PALFLAG|PAL_PLL),
+  .CVBS(yc_cvbs_s),
 	.MULFLAG(1'b0),
 	.CHROMA_ADD(CHROMA_ADD),
 	.CHROMA_MULT(CHROMA_MULT),
@@ -1084,8 +1085,8 @@ openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(MASTER_CLK_FREQ)) analogizer (
       .rom_type(rom_type),
       .rom_size(rom_size),
       .ram_size(ram_size),
-      .PAL(PAL),
-      .DIS_SHORTLINE(1'b1), //sNTSC-DeJitter mode Enabled -> 1'b1
+      .PAL(PALFLAG|PAL_PLL),
+      .DIS_SHORTLINE(sync_dejitter), //sNTSC-DeJitter mode Enabled, could introduce incompabilities with super FX games
 
 
       // Save input/output

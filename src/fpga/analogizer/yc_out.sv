@@ -30,6 +30,7 @@ module yc_out
 	input   clk,		
 	input 	[39:0] PHASE_INC,
 	input	PAL_EN,
+	input   CVBS,
 	input   [26:0] COLORBURST_RANGE,
 	
 	// Phase Accumunulator tuning variables used only during core development
@@ -228,12 +229,11 @@ always_ff @(posedge clk) begin
 	hsync_o <= phase[4].hsync; 	vsync_o <= phase[4].vsync; csync_o <= phase[4].csync;
 	phase[1].y <= phase[0].y; phase[2].y <= phase[1].y; phase[3].y <= phase[2].y; phase[4].y <= phase[3].y; phase[5].y <= phase[4].y;
 
-	// Set Chroma / Luma output
-	C <= phase[4].c[7:0];
-	Y <= phase[5].y[17:10];
+// Set Chroma / Luma output
+C <= CVBS ? 8'd0 : phase[4].c[7:0];
+Y <= CVBS ? ({1'b0, phase[5].y[17:11]} + {1'b0, phase[4].c[7:1]}) : phase[5].y[17:10];
 end
 
 assign dout = {C, Y, 8'd0};
 
 endmodule
-
