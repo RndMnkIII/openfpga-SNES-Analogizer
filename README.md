@@ -1,7 +1,46 @@
 # ADAPTED FOR ANALOGIZER: SNES for Analogue Pocket
-* [1.0] Analogizer support added by RndMnkIII. See more in the Analogizer main repository: [Analogizer](https://github.com/RndMnkIII/Analogizer) [13/05/2024].
+Adapted to **Analogizer** by [@RndMnkIII](https://github.com/RndMnkIII) based on **agg23** SNES for Analogue Pocket Core.
+
+**Analogizer** interface code includes code from Mist project (Scandoubler), from MiSTer project (YPbPr) and from Mike Simone Y/C adapter project (Y/C and Phase Color settings).
+
+* [1.0.0] Analogizer support added by RndMnkIII. See more in the Analogizer main repository: [Analogizer](https://github.com/RndMnkIII/Analogizer) [13/05/2024].
 Fixed sync jitter. The core now can output RGBS, RGsB, YPbPr, Y/C, Composite video and SVGA scandoubler (50% scanlines) video signals.
-* [1.1] Fixed FX games error with 1.0. Added CVBS Y/C video output for passive Y/C adapters. [14/05/2024]
+* [1.0.1] Fixed some errors. Now YPbPr video mode should be work on TV's with```Sync dejitter``` setting Enabled  [21/05/2024].
+
+| Video output | Status |
+| :----------- | :----: |
+| RGBS         |  ✅    |
+| RGsB         |  ✅    |
+| YPbPr*       |  ✅    |
+| Y/C*         |  ✅    |
+| Scandoubler  |  ✅    |
+
+ ```* Needs to enable Sync dejitter option in menu Core```
+
+* **Analogizer** is responsible for generating the correct encoded Y/C signals from RGB and outputs to R,G pins of VGA port. Also redirects the CSync to VGA HSync pin.
+The required external Y/C adapter that connects to VGA port is responsible for output Svideo o composite video signal using his internal electronics. Oficially
+only the Mike Simone Y/C adapters (active) designs will be supported by Analogizer and will be the ones to use.
+
+Support native PCEngine/TurboGrafx-16 2btn, 6 btn gamepads and 5 player multitap using SNAC adapter
+and PC Engine cable harness (specific for Analogizer). Many thanks to [Mike Simone](https://github.com/MikeS11/MiSTerFPGA_YC_Encoder) for his great Y/C Encoder project.
+
+For output YPbPr component video you need Analogizer R2 revision with SOG (Sync On Green) switch in ON position and select in Pocket's Menu: `Analogiizer Video Out > YPbPr` or `Analogiizer Video Out > YPbPr,Pocket OFF`.
+
+For output Scandoubler SVGA video you need to select in Pocket's Menu: `Analogizer Video Out > Scandoubler RGBHV`.
+
+For output Y/C video you need to select in Pocket's Menu: `Analogizer Video Out > Y/C NTSC` or `Analogizer Video Out > Y/C NTSC,Pocket OFF`.
+
+You will need to connect an active VGA to Y/C adapter to the VGA port (the 5V power is provided by VGA pin 9). I'll recomend one of these (active):
+* [MiSTerAddons - Active Y/C Adapter](https://misteraddons.com/collections/parts/products/yc-active-encoder-board/)
+* [MikeS11 Active VGA to Composite / S-Video](https://ultimatemister.com/product/mikes11-active-composite-svideo/)
+* [Active VGA->Composite/S-Video adapter](https://antoniovillena.com/product/mikes1-vga-composite-adapter/)
+
+Using another type of Y/C adapter not tested to be used with Analogizer will not receive official support.
+
+I'll recomend also read this guide for MiSTer FPGA but can applied to Analogizer:
+[MiSTer FPGA Documentation: Using Your CRT With MiSTer](https://mister-devel.github.io/MkDocs_MiSTer/advanced/crt/)
+
+=====================================================================
 Ported from the original core developed by [srg320](https://github.com/srg320) ([Patreon](https://www.patreon.com/srg320)). Latest upstream available at https://github.com/MiSTer-devel/SNES_MiSTer.
 
 Please report any issues encountered to this repo. Most likely any problems are a result of my port, not the original core. Issues will be upstreamed as necessary.

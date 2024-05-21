@@ -806,7 +806,7 @@ always @(*) begin
   analogizer_video_type = analogizer_settings_s[13:10];
 end
 
-wire clk_vid = video_rgb_clock; //video_rgb_clock; //Fixed one bit shift error on RGB channels.
+wire clk_vid = video_rgb_clock_90; //video_rgb_clock; //Fixed one bit shift error on RGB channels.
 wire SYNC = ~^{video_hs_snes, video_vs_snes};
 wire  ANALOGIZER_DE = ~(h_blank || v_blank);
   //create aditional switch to blank Pocket screen.
@@ -966,7 +966,7 @@ openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(MASTER_CLK_FREQ)) analogizer (
 	.video_clk(clk_vid),
   //Video Y/C Encoder interface
   .PALFLAG(PALFLAG|PAL_PLL),
-  .CVBS(yc_cvbs_s),
+  .CVBS(1'b0),
 	.MULFLAG(1'b0),
 	.CHROMA_ADD(CHROMA_ADD),
 	.CHROMA_MULT(CHROMA_MULT),
@@ -1085,7 +1085,7 @@ openFPGA_Pocket_Analogizer #(.MASTER_CLK_FREQ(MASTER_CLK_FREQ)) analogizer (
       .rom_type(rom_type),
       .rom_size(rom_size),
       .ram_size(ram_size),
-      .PAL(PALFLAG|PAL_PLL),
+      .PAL(PAL),
       .DIS_SHORTLINE(sync_dejitter), //sNTSC-DeJitter mode Enabled, could introduce incompabilities with super FX games
 
 

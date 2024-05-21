@@ -224,6 +224,7 @@ module openFPGA_Pocket_Analogizer #(parameter MASTER_CLK_FREQ=50_000_000) (
 	vga_out ybpr_video
 	(
 		.clk(video_clk),
+		.ypbpr_en(1'b1),
 		.csync(Csync),
 		.de(BLANKn),
 		.din({R&{8{BLANKn}},G&{8{BLANKn}},B&{8{BLANKn}}}), //NES specific override, because not zero color data while blanking period.

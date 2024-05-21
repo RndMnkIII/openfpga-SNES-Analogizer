@@ -46,6 +46,7 @@ set_global_assignment -name LAST_QUARTUS_VERSION "21.1.0 Lite Edition"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:apf/build_id_gen.tcl"
 set_global_assignment -name SMART_RECOMPILE ON
+set_global_assignment -name SEED 2
 
 # Pin & Location Assignments
 # ==========================
@@ -293,10 +294,11 @@ set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 8
 set_global_assignment -name TOP_LEVEL_ENTITY apf_top
 set_global_assignment -name SAFE_STATE_MACHINE ON
 set_global_assignment -name ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP ON
+set_global_assignment -name ALLOW_POWER_UP_DONT_CARE ON
 set_global_assignment -name SYNTH_PROTECT_SDC_CONSTRAINT ON
 set_global_assignment -name PRE_MAPPING_RESYNTHESIS ON
-set_global_assignment -name OPTIMIZATION_TECHNIQUE AREA
-set_global_assignment -name MUX_RESTRUCTURE OFF
+set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
+#set_global_assignment -name MUX_RESTRUCTURE OFF
 
 # Fitter Assignments
 # ==================
@@ -738,9 +740,9 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 # end ENTITY(mf_pllbase_0002)
 # ---------------------------
 
-set_global_assignment -name ALM_REGISTER_PACKING_EFFORT HIGH
+#set_global_assignment -name ALM_REGISTER_PACKING_EFFORT HIGH
 set_global_assignment -name ROUTER_REGISTER_DUPLICATION ON
-set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
+#set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
 set_parameter -name USE_CX4 '1 -entity MAIN_SNES
 set_parameter -name USE_SDD1 '0 -entity MAIN_SNES
@@ -792,5 +794,5 @@ set_global_assignment -name QIP_FILE core/mf_pllbase.qip
 set_global_assignment -name SIP_FILE core/mf_pllbase.sip
 set_global_assignment -name QIP_FILE core/mf_pllbase_pal.qip
 set_global_assignment -name SIP_FILE core/mf_pllbase_pal.sip
-set_global_assignment -name QII_AUTO_PACKED_REGISTERS "MINIMIZE AREA"
+set_global_assignment -name QII_AUTO_PACKED_REGISTERS AUTO
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
