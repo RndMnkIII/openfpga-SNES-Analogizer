@@ -6,16 +6,51 @@ Adapted to **Analogizer** by [@RndMnkIII](https://github.com/RndMnkIII) based on
 * [1.0.0] Analogizer support added by RndMnkIII. See more in the Analogizer main repository: [Analogizer](https://github.com/RndMnkIII/Analogizer) [13/05/2024].
 Fixed sync jitter. The core now can output RGBS, RGsB, YPbPr, Y/C, Composite video and SVGA scandoubler (50% scanlines) video signals.
 * [1.0.1] Fixed some errors. Now YPbPr video mode should be work on TV's with```Sync dejitter``` setting Enabled  [21/05/2024].
+* [1.0.2] Fixed last vertical line showed in the first column. Added PSX digital/DS/DS2 SNAC support (SCPH-1010, SPCH-1080,SCPH-1180, SCPH-1200, SCPH-10010 and clones).[31/12/2024].
 
-| Video output | Status |
-| :----------- | :----: |
-| RGBS         |  ✅    |
-| RGsB         |  ✅    |
-| YPbPr*       |  ✅    |
-| Y/C*         |  ✅    |
-| Scandoubler  |  ✅    |
+| Video output | Status | SOG Switch(Only R2,R3 Analogizer) |
+| :----------- | :----: | :-------------------------------: |     
+| RGBS         |  ✅    |     Off                           |
+| RGsB         |  ✅    |     On                            |
+| YPbPr*       |  ✅🔹  |     On                            |
+| Y/C NTSC*    |  ✅    |     Off                           |
+| Y/C PAL*     |  ✅    |     Off                           |
+| Scandoubler  |  ✅    |     Off                           |
+
+🔹 Tested with Sony PVM-9044D
+
+| :video_game:            | Analogizer A/B config Switch | Status |
+| :---------------------- | :--------------------------- | :----: |
+| DB15                    | A                            |  ✅    |
+| NES                     | A                            |  ✅    |
+| SNES                    | A                            |  ✅    |
+| PCENGINE                | A                            |  ✅    |
+| PCE MULTITAP            | A                            |  ✅    |
+| PSX DS/DS2 Digital DPAD | B                            |  ✅    |
+| PSX DS/DS2 Analog  DPAD | B                            |  ✅    |
 
  ```* Needs to enable Sync dejitter option in menu Core```
+
+The Analogizer interface allow to mix game inputs from compatible SNAC gamepads supported by Analogizer (DB15 Neogeo, NES, SNES, PCEngine, PSX) with Analogue Pocket built-in controls or from Dock USB or wireless supported controllers (Analogue support).
+
+All Analogizer adapter versions (v1, v2 and v3) has a side slide switch labeled as 'A B' that must be configured based on the used SNAC game controller.
+For example for use it with PSX Dual Shock or Dual Shock 2 native gamepad you must position the switch lever on the B side position. For the remaining
+game controllers you must switch the lever on the A side position. 
+Be careful when handling this switch. Use something with a thin, flat tip such as a precision screwdriver with a 2.0mm flat blade for example. Place the tip on the switch lever and press gently until it slides into the desired position:
+```
+     ---
+   B|O  |A  A/B switch on position B
+     ---   
+     ---
+   B|  O|A  A/B switch on position A
+     ---
+``` 
+
+The following options exist in the core menu to configure Analogizer:
+* **SNAC Adapter** List: None, DB15,NES,SNES,PCE,PCE Multitap, SNES swap A,B<->X,Y buttons, PSX (Digital DPAD), PSX (Analog DPAD), PSX (P1 Lightgun). The Lightgun option uses PSX Analogic stick as SNES Lightgun aiming track.
+* **SNAC Controller Assignment** List: several options about how to map SNAC controller to Pocket controls. The controls not mapped to SNAC by default will map to Pocket connected controllers (Pocket built-in or Dock).
+* **Analogizer Video Out** List: you can choose between RGBS (VGA to SCART), RGsB (works is a PVM as YPbPr but using RGB color space), YPbPr (for TV with component video input),
+Y/C NTSC or PAL (for SVideo o compositive video using Y/C Active adapter by Mike S11), RGBHV for SVGA monitor Scandouble video output.
 
 * **Analogizer** is responsible for generating the correct encoded Y/C signals from RGB and outputs to R,G pins of VGA port. Also redirects the CSync to VGA HSync pin.
 The required external Y/C adapter that connects to VGA port is responsible for output Svideo o composite video signal using his internal electronics. Oficially
@@ -24,7 +59,7 @@ only the Mike Simone Y/C adapters (active) designs will be supported by Analogiz
 Support native PCEngine/TurboGrafx-16 2btn, 6 btn gamepads and 5 player multitap using SNAC adapter
 and PC Engine cable harness (specific for Analogizer). Many thanks to [Mike Simone](https://github.com/MikeS11/MiSTerFPGA_YC_Encoder) for his great Y/C Encoder project.
 
-For output YPbPr component video you need Analogizer R2 revision with SOG (Sync On Green) switch in ON position and select in Pocket's Menu: `Analogiizer Video Out > YPbPr` or `Analogiizer Video Out > YPbPr,Pocket OFF`.
+For output YPbPr component video you need Analogizer R2 revision with SOG (Sync On Green) switch in ON position and select in Pocket's Menu: `Analogizer Video Out > YPbPr` or `Analogiizer Video Out > YPbPr,Pocket OFF`. Must be enabled ```Sync dejitter``` option, specific for SNES core, if this option is not enabled, surely no image or scrambled image will be show.
 
 For output Scandoubler SVGA video you need to select in Pocket's Menu: `Analogizer Video Out > Scandoubler RGBHV`.
 
